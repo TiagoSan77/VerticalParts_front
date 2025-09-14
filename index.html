@@ -1548,10 +1548,23 @@
         }
 
         function viewVisitorDetails(visitorId) {
-            const visitor = visitors.find(v => v.id === visitorId);
+            console.log('🔍 Buscando visitante com ID:', visitorId);
+            console.log('🗂️ Total de visitantes:', visitors.length);
+            console.log('📋 Primeiro visitante (exemplo):', visitors[0]);
+            
+            const visitor = visitors.find(v => {
+                const hasIdMatch = v.id === visitorId || String(v.id) === String(visitorId);
+                const hasObjectIdMatch = v._id === visitorId || String(v._id) === String(visitorId);
+                return hasIdMatch || hasObjectIdMatch;
+            });
+            
             if (visitor) {
                 const exitInfo = visitor.exitTime ? `\nSaída: ${visitor.exitTime}` : '\nSaída: Ainda no local';
-                alert(`👤 Detalhes do Visitante:\n\nNome: ${visitor.name}\nDocumento: ${visitor.document}\nTelefone: ${visitor.phone}\nMotivo: ${visitor.visitReason}\nResponsável: ${visitor.visitResponsible}\nEntrada: ${visitor.entryTime}${exitInfo}\nCartão: ${visitor.cardNumber}`);
+                alert(`👤 Detalhes do Visitante:\n\nNome: ${visitor.name}\nDocumento: ${visitor.document}\nTelefone: ${visitor.phone}\nMotivo: ${visitor.visitReason}\nResponsável: ${visitor.visitResponsible}\nEntrada: ${visitor.entryTime}${exitInfo}\nCartão: ${visitor.cardNumber || 'Não atribuído'}`);
+            } else {
+                console.log('❌ Visitante não encontrado! ID procurado:', visitorId);
+                console.log('🔍 IDs disponíveis:', visitors.map(v => ({name: v.name, id: v.id, _id: v._id})));
+                alert('❌ Visitante não encontrado!\n\nPor favor, recarregue a página e tente novamente.');
             }
         }
 
@@ -1613,14 +1626,26 @@
                 return;
             }
 
-            const visitor = visitors.find(v => v.id === visitorId);
+            console.log('🗑️ Tentando deletar visitante com ID:', visitorId);
+            console.log('🗂️ Total de visitantes:', visitors.length);
+            
+            const visitor = visitors.find(v => {
+                const hasIdMatch = v.id === visitorId || String(v.id) === String(visitorId);
+                const hasObjectIdMatch = v._id === visitorId || String(v._id) === String(visitorId);
+                return hasIdMatch || hasObjectIdMatch;
+            });
+            
             if (!visitor) {
-                alert('❌ Visitante não encontrado!');
+                console.log('❌ Visitante não encontrado! ID procurado:', visitorId);
+                console.log('🔍 IDs disponíveis:', visitors.map(v => ({name: v.name, id: v.id, _id: v._id})));
+                alert('❌ Visitante não encontrado!\n\nPor favor, recarregue a página e tente novamente.');
                 return;
             }
 
+            console.log('✅ Visitante encontrado:', visitor.name);
+
             // Confirmação dupla para deletar
-            const confirmMessage = `⚠️ ATENÇÃO: Esta ação não pode ser desfeita!\n\n🗑️ Deseja realmente DELETAR o visitante?\n\n👤 Nome: ${visitor.name}\n📄 Documento: ${visitor.document}\n📱 Telefone: ${visitor.phone}\n🎫 Cartão: ${visitor.cardNumber}\n\n⚠️ Todos os dados serão perdidos permanentemente!`;
+            const confirmMessage = `⚠️ ATENÇÃO: Esta ação não pode ser desfeita!\n\n🗑️ Deseja realmente DELETAR o visitante?\n\n👤 Nome: ${visitor.name}\n📄 Documento: ${visitor.document}\n📱 Telefone: ${visitor.phone}\n🎫 Cartão: ${visitor.cardNumber || 'Não atribuído'}\n\n⚠️ Todos os dados serão perdidos permanentemente!`;
             
             if (!confirm(confirmMessage)) {
                 return;
@@ -1638,14 +1663,18 @@
             try {
                 showLoading('Deletando visitante...');
                 
-                const response = await apiCall(`${API_CONFIG.endpoints.visitors}/${visitorId}`, {
+                // Usar o _id do MongoDB para a API (preferir _id se disponível)
+                const apiVisitorId = visitor._id || visitor.id;
+                console.log('📡 Enviando delete para API com ID:', apiVisitorId);
+                
+                const response = await apiCall(`${API_CONFIG.endpoints.visitors}/${apiVisitorId}?deletedBy=${encodeURIComponent(currentUser.name)}`, {
                     method: 'DELETE'
                 });
                 
                 hideLoading();
                 
                 if (response.success) {
-                    alert(`✅ Visitante deletado com sucesso!\n\n👤 ${visitor.name} foi removido permanentemente do sistema.\n🎫 Cartão ${visitor.cardNumber} foi liberado.\n\n📝 Ação registrada por: ${currentUser.name}`);
+                    alert(`✅ Visitante deletado com sucesso!\n\n👤 ${visitor.name} foi removido permanentemente do sistema.\n🎫 Cartão ${visitor.cardNumber || 'Não atribuído'} foi liberado.\n\n📝 Ação registrada por: ${currentUser.name}`);
                     
                     // Recarregar dados e atualizar interface
                     await loadVisitors();
@@ -1657,10 +1686,12 @@
                     loadRecentRegistrations();
                     loadActiveVisitors();
                 } else {
+                    console.log('❌ Erro na API:', response);
                     alert('❌ ' + (response.message || 'Erro ao deletar visitante'));
                 }
             } catch (error) {
                 hideLoading();
+                console.log('❌ Erro capturado:', error);
                 showError(error, 'ao deletar visitante');
             }
         }
