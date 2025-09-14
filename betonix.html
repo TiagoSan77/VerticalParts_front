@@ -1,0 +1,2327 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CONTROLE DE ACESSO - LOGIN</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .card-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .login-bg {
+            background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #fcd34d 100%);
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body class="login-bg min-h-screen flex items-center justify-center">
+    <!-- Modal da Câmera -->
+    <div id="cameraModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-6 shadow-2xl w-full max-w-md mx-4 fade-in">
+            <div class="text-center mb-4">
+                <h2 class="text-xl font-bold text-gray-800 mb-2">📷 Capturar Foto do Visitante</h2>
+                <p class="text-gray-600 text-sm">Posicione o visitante na frente da câmera</p>
+            </div>
+
+            <div class="space-y-4">
+                <div class="relative">
+                    <video id="cameraVideo" class="w-full h-64 bg-gray-200 rounded-lg object-cover" autoplay playsinline></video>
+                    <canvas id="photoCanvas" class="hidden"></canvas>
+                </div>
+
+                <div class="flex space-x-3">
+                    <button onclick="capturePhoto()" 
+                            class="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
+                        <span class="mr-2">📸</span> CAPTURAR
+                    </button>
+                    <button onclick="closeCamera()" 
+                            class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
+                        <span class="mr-2">❌</span> CANCELAR
+                    </button>
+                </div>
+
+                <div class="text-center">
+                    <p class="text-xs text-gray-500">A foto será salva junto com os dados do visitante</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Trocar Senha -->
+    <div id="changePasswordModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-8 shadow-2xl w-full max-w-md mx-4 fade-in">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">🔑 Trocar Senha</h2>
+                <p class="text-gray-600">Altere sua senha de acesso ao sistema</p>
+            </div>
+
+            <form id="changePasswordForm" class="space-y-4">
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-2">Senha Atual *</label>
+                    <input type="password" id="currentPassword" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="Digite sua senha atual">
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-2">Nova Senha *</label>
+                    <input type="password" id="newPassword" required minlength="6"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="Digite a nova senha (mín. 6 caracteres)">
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-2">Confirmar Nova Senha *</label>
+                    <input type="password" id="confirmNewPassword" required minlength="6"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="Confirme a nova senha">
+                </div>
+
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                    <p class="text-xs text-yellow-700">
+                        ⚠️ <strong>Importante:</strong> A alteração da senha será registrada no sistema com data e hora.
+                    </p>
+                </div>
+
+                <div class="flex space-x-3 pt-4">
+                    <button type="submit" 
+                            class="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
+                        <span class="mr-2">✅</span> ALTERAR SENHA
+                    </button>
+                    <button type="button" onclick="hideChangePasswordModal()" 
+                            class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
+                        <span class="mr-2">❌</span> CANCELAR
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Criar Usuário -->
+    <div id="createUserModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-8 shadow-2xl w-full max-w-md mx-4 fade-in">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">👤 Criar Novo Usuário</h2>
+                <p class="text-gray-600">Preencha os dados para criar uma nova conta</p>
+            </div>
+
+            <form id="createUserForm" class="space-y-4">
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-2">Nome Completo *</label>
+                    <input type="text" id="newUserName" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="Digite o nome completo">
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-2">E-mail *</label>
+                    <input type="email" id="newUserEmail" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="Digite o e-mail">
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-2">Senha *</label>
+                    <input type="password" id="newUserPassword" required minlength="6"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="Digite a senha (mín. 6 caracteres)">
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-2">Confirmar Senha *</label>
+                    <input type="password" id="confirmPassword" required minlength="6"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="Confirme a senha">
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-2">Tipo de Usuário *</label>
+                    <select id="newUserType" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">Selecione o tipo...</option>
+                        <option value="common">👤 Usuário Comum</option>
+                        <option value="admin">👑 Administrador</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">
+                        <strong>Usuário Comum:</strong> Pode cadastrar e gerenciar visitantes<br>
+                        <strong>Administrador:</strong> Acesso completo + gerenciar usuários + deletar visitantes
+                    </p>
+                </div>
+
+                <div class="flex space-x-3 pt-4">
+                    <button type="submit" 
+                            class="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
+                        <span class="mr-2">✅</span> CRIAR USUÁRIO
+                    </button>
+                    <button type="button" onclick="hideCreateUserForm()" 
+                            class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
+                        <span class="mr-2">❌</span> CANCELAR
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tela de Login -->
+    <div id="loginScreen" class="w-full max-w-md mx-auto p-6">
+        <div class="glass-effect rounded-2xl p-8 shadow-2xl fade-in">
+            <!-- Logo e Título -->
+            <div class="text-center mb-8">
+                <div class="mb-4">
+                    <img src="https://verticalparts.com.br/wp-content/uploads/2023/10/LOGO3.png" alt="VerticalParts Logo" class="h-16 w-auto mx-auto" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                    <div style="display: none;" class="text-6xl">🏢</div>
+                </div>
+                <h1 class="text-3xl font-bold text-white mb-2">CONTROLE DE ACESSO</h1>
+                <p class="text-yellow-100">Sistema de Gerenciamento de Visitantes</p>
+            </div>
+
+            <!-- Formulário de Login -->
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label class="block text-white text-sm font-medium mb-2">
+                        📧 E-mail
+                    </label>
+                    <input type="email" id="username" required
+                           class="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-lg text-white placeholder-white/80 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent"
+                           placeholder="Digite seu e-mail">
+                </div>
+
+                <div>
+                    <label class="block text-white text-sm font-medium mb-2">
+                        🔒 Senha
+                    </label>
+                    <input type="password" id="password" required
+                           class="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-lg text-white placeholder-white/80 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent"
+                           placeholder="Digite sua senha">
+                </div>
+
+                <button type="submit" 
+                        class="w-full bg-black hover:bg-gray-800 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center">
+                    <img src="https://verticalparts.volpecom.net/_lib/img/grp__NM__bg__NM__logo_compacto.png" alt="VP" class="w-5 h-5 mr-2" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"><span style="display: none;" class="mr-2">🚪</span> ENTRAR NO SISTEMA
+                </button>
+            </form>
+
+            <!-- Rodapé -->
+            <div class="text-center mt-6">
+                <p class="text-yellow-100 text-sm">
+                    © 2025 VerticalParts - Todos os direitos reservados
+                </p>
+                <div class="flex items-center justify-center mt-2 text-yellow-200 text-xs">
+                    <span class="mr-1">🔒</span> Sistema Seguro
+                    <span class="mx-2">•</span>
+                    <span id="loginTime" class="mr-1"></span>
+                </div>
+                <p class="text-yellow-200 text-xs mt-2">
+                    💻 Criado e desenvolvido pelo Geovane T.I - VP
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sistema Principal (inicialmente oculto) -->
+    <div id="mainSystem" class="hidden">
+        <!-- Header -->
+        <header class="bg-yellow-400 text-black p-4 shadow-lg">
+            <div class="container mx-auto flex justify-between items-center">
+                <div class="flex items-center">
+                    <img src="https://verticalparts.com.br/wp-content/uploads/2023/10/LOGO3.png" alt="VerticalParts Logo" class="h-12 w-auto" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                    <span style="display: none;">🚪</span>
+                </div>
+                <h1 class="text-2xl font-bold text-white absolute left-1/2 transform -translate-x-1/2">
+                    CONTROLE DE ACESSO
+                </h1>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-500 text-xs">👤</div>
+                        <span class="text-sm font-medium"><span id="loggedUser">Usuário</span></span>
+                    </div>
+                    <span id="currentTime" class="text-sm font-medium"></span>
+                    <button onclick="showChangePasswordModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-full text-sm transition-colors">
+                        🔑 Trocar Senha
+                    </button>
+                    <button onclick="logout()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-full text-sm transition-colors">
+                        🚪 Sair
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Menu Principal -->
+        <nav class="bg-white shadow-md border-b">
+            <div class="container mx-auto px-6">
+                <div class="flex space-x-8">
+                    <button onclick="showTab('cadastro')" id="tab-cadastro" 
+                            class="py-4 px-2 border-b-2 border-blue-600 text-blue-600 font-medium text-sm hover:text-blue-800 transition-colors">
+                        📝 Cadastro do Visitante
+                    </button>
+                    <button onclick="showTab('visitantes')" id="tab-visitantes" 
+                            class="py-4 px-2 border-b-2 border-transparent text-gray-500 font-medium text-sm hover:text-gray-700 transition-colors">
+                        👥 Visitantes Cadastrados
+                    </button>
+                    <button onclick="showTab('cartoes')" id="tab-cartoes" 
+                            class="py-4 px-2 border-b-2 border-transparent text-gray-500 font-medium text-sm hover:text-gray-700 transition-colors">
+                        🎫 Cartões de Acesso
+                    </button>
+                    <button onclick="showTab('devolver')" id="tab-devolver" 
+                            class="py-4 px-2 border-b-2 border-transparent text-gray-500 font-medium text-sm hover:text-gray-700 transition-colors admin-only" style="display: none;">
+                        🔄 Devolver Cartão
+                    </button>
+                    <button onclick="showTab('usuarios')" id="tab-usuarios" 
+                            class="py-4 px-2 border-b-2 border-transparent text-gray-500 font-medium text-sm hover:text-gray-700 transition-colors admin-only" style="display: none;">
+                        👥 Gerenciar Usuários
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container mx-auto p-6">
+            <!-- Aba Cadastro do Visitante -->
+            <div id="content-cadastro" class="tab-content">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Formulário de Cadastro -->
+                    <div class="lg:col-span-2">
+                        <div class="bg-white rounded-lg shadow-lg p-6">
+                            <h2 class="text-xl font-semibold mb-6 text-gray-800 flex items-center">
+                                <span class="text-2xl mr-2">📝</span> Cadastro de Visitante
+                            </h2>
+                            
+                            <form id="visitorForm" class="space-y-6">
+                                <!-- Dados Pessoais -->
+                                <div class="bg-gray-50 rounded-lg p-4">
+                                    <h3 class="text-lg font-medium text-gray-700 mb-4">👤 Dados Pessoais</h3>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Nome Completo *</label>
+                                            <input type="text" id="visitorName" required
+                                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Documento (CPF/RG) *</label>
+                                            <input type="text" id="visitorDocument" required placeholder="000.000.000-00"
+                                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Telefone para Contato *</label>
+                                            <input type="tel" id="visitorPhone" required placeholder="(11) 99999-9999"
+                                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">📸 Foto do Visitante (Opcional)</label>
+                                            <div class="space-y-2">
+                                                <button type="button" onclick="openCamera()" 
+                                                        class="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md text-sm transition-colors flex items-center justify-center">
+                                                    <span class="mr-2">📷</span> Tirar Foto
+                                                </button>
+                                                <div id="photoPreview" class="hidden">
+                                                    <img id="capturedPhoto" class="w-full h-32 object-cover rounded-md border" alt="Foto do visitante">
+                                                    <button type="button" onclick="removePhoto()" 
+                                                            class="w-full mt-1 bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs transition-colors">
+                                                        🗑️ Remover Foto
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Informações da Visita -->
+                                <div class="bg-blue-50 rounded-lg p-4">
+                                    <h3 class="text-lg font-medium text-gray-700 mb-4">📋 Informações da Visita</h3>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Motivo da Visita *</label>
+                                            <select id="visitReason" required
+                                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                                <option value="">Selecione o motivo...</option>
+                                                <option value="PRESTADOR DE SERVIÇO">PRESTADOR DE SERVIÇO</option>
+                                                <option value="VISITA COMERCIAL">VISITA COMERCIAL</option>
+                                                <option value="ENTREVISTA">ENTREVISTA</option>
+                                                <option value="PROVISÓRIO">PROVISÓRIO</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Responsável pela Visita *</label>
+                                            <input type="text" id="visitResponsible" required placeholder="Nome do funcionário ou setor responsável"
+                                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Observações -->
+                                <div class="bg-yellow-50 rounded-lg p-4">
+                                    <h3 class="text-lg font-medium text-gray-700 mb-4">📋 Observações</h3>
+                                    <textarea id="observations" rows="3" placeholder="Digite observações adicionais sobre a visita..."
+                                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                                </div>
+
+                                <!-- Botões -->
+                                <div class="flex space-x-4 pt-6">
+                                    <button type="submit" 
+                                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium transition-colors flex items-center">
+                                        <span class="mr-2">✅</span> Cadastrar Visitante
+                                    </button>
+                                    <button type="button" onclick="clearForm()" 
+                                            class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-md font-medium transition-colors flex items-center">
+                                        <span class="mr-2">🗑️</span> Limpar Formulário
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Painel Lateral -->
+                    <div class="space-y-6">
+                        <!-- Status dos Cartões -->
+                        <div class="bg-white rounded-lg shadow-lg p-6">
+                            <h3 class="text-lg font-semibold mb-4 text-gray-800 flex items-center">
+                                <span class="mr-2">📊</span> Status dos Cartões
+                            </h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">Disponíveis:</span>
+                                    <span id="availableCards" class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">11</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">Em Uso:</span>
+                                    <span id="usedCards" class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">0</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">Total:</span>
+                                    <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">11</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Últimos Cadastros -->
+                        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                            <h3 class="text-lg font-semibold mb-4 text-gray-800 flex items-center">
+                                <span class="mr-2">📋</span> Últimos Cadastros
+                            </h3>
+                            <div id="recentRegistrations" class="space-y-3 max-h-64 overflow-y-auto">
+                                <div class="text-gray-500 text-center py-4 text-sm">Nenhum cadastro recente</div>
+                            </div>
+                        </div>
+
+                        <!-- Visitantes Ativos -->
+                        <div class="bg-white rounded-lg shadow-lg p-6">
+                            <h3 class="text-lg font-semibold mb-4 text-gray-800 flex items-center">
+                                <span class="mr-2">🟢</span> Visitantes Ativos
+                            </h3>
+                            <div id="activeVisitors" class="space-y-3">
+                                <div class="text-gray-500 text-center py-4 text-sm">Nenhum visitante ativo</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aba Visitantes Cadastrados -->
+            <div id="content-visitantes" class="tab-content hidden">
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-semibold text-gray-800 flex items-center">
+                            <span class="text-2xl mr-2">👥</span> Visitantes Cadastrados
+                        </h2>
+                        <div class="flex space-x-4">
+                            <input type="text" id="searchVisitor" placeholder="Buscar por nome, documento ou telefone..." 
+                                   class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-64">
+                            <button onclick="searchVisitors()" 
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors flex items-center">
+                                <span class="mr-1">🔍</span> Buscar
+                            </button>
+                            <button onclick="printVisitorsPDF()" 
+                                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition-colors flex items-center">
+                                <span class="mr-1">📄</span> Imprimir PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="visitorsTable" class="overflow-x-auto">
+                        <table class="min-w-full table-auto">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Visitante</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contato</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Entrada</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Saída</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cartão</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Motivo</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Responsável</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="visitorsTableBody" class="bg-white divide-y divide-gray-200">
+                                <!-- Dados serão inseridos aqui via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aba Cartões de Acesso -->
+            <div id="content-cartoes" class="tab-content hidden">
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h2 class="text-xl font-semibold mb-6 text-gray-800 flex items-center">
+                        <span class="text-2xl mr-2">🎫</span> Gerenciamento de Cartões
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-green-600" id="totalAvailable">11</div>
+                                <div class="text-sm text-green-600">Disponíveis</div>
+                            </div>
+                        </div>
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-red-600" id="totalInUse">0</div>
+                                <div class="text-sm text-red-600">Em Uso</div>
+                            </div>
+                        </div>
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-blue-600">11</div>
+                                <div class="text-sm text-blue-600">Total</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="cardsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Cartões serão gerados via JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aba Devolver Cartão -->
+            <div id="content-devolver" class="tab-content hidden">
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h2 class="text-xl font-semibold mb-6 text-gray-800 flex items-center">
+                        <span class="text-2xl mr-2">🔄</span> Devolver Cartão de Acesso
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div>
+                            <div class="bg-blue-50 rounded-lg p-4 mb-6">
+                                <h3 class="text-lg font-medium text-gray-700 mb-4">🔍 Buscar Visitante</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Buscar por Nome ou Número do Cartão</label>
+                                        <input type="text" id="returnSearchInput" placeholder="Digite o nome do visitante ou número do cartão"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    
+                                    <button onclick="findVisitorByNameOrCard()" 
+                                            class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md font-medium transition-colors flex items-center justify-center">
+                                        <span class="mr-2">🔍</span> Buscar Visitante
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="visitorInfo" class="hidden bg-gray-50 rounded-lg p-4">
+                                <h3 class="font-semibold text-gray-800 mb-4 flex items-center">
+                                    <span class="mr-2">👤</span> Informações do Visitante
+                                </h3>
+                                <div id="visitorDetails" class="space-y-2 text-sm text-gray-600 mb-4">
+                                    <!-- Detalhes do visitante serão inseridos aqui -->
+                                </div>
+                                
+                                <button onclick="returnCard()" 
+                                        class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-md font-medium transition-colors flex items-center justify-center">
+                                    <span class="mr-2">✅</span> Confirmar Devolução
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="text-lg font-semibold mb-4 text-gray-800 flex items-center">
+                                <span class="mr-2">📊</span> Últimas Devoluções
+                            </h3>
+                            <div id="recentReturns" class="space-y-3">
+                                <div class="text-gray-500 text-center py-4">Nenhuma devolução recente</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aba Gerenciar Usuários (Apenas Administradores) -->
+            <div id="content-usuarios" class="tab-content hidden">
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-semibold text-gray-800 flex items-center">
+                            <span class="text-2xl mr-2">👥</span> Gerenciamento de Usuários
+                        </h2>
+                        <div class="flex space-x-4">
+                            <button onclick="showCreateUserForm()" 
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors flex items-center">
+                                <span class="mr-1">➕</span> Novo Usuário
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Estatísticas dos Usuários -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-blue-600" id="totalUsers">0</div>
+                                <div class="text-sm text-blue-600">Total de Usuários</div>
+                            </div>
+                        </div>
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-red-600" id="adminUsers">0</div>
+                                <div class="text-sm text-red-600">Administradores</div>
+                            </div>
+                        </div>
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-green-600" id="commonUsers">0</div>
+                                <div class="text-sm text-green-600">Usuários Comuns</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabela de Usuários -->
+                    <div id="usersTable" class="overflow-x-auto">
+                        <table class="min-w-full table-auto">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuário</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">E-mail</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Criado em</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Último Login</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody" class="bg-white divide-y divide-gray-200">
+                                <!-- Dados serão inseridos aqui via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== CONFIGURAÇÃO DA API ====================
+        const API_CONFIG = {
+            baseURL: 'http://localhost:5000',
+            endpoints: {
+                login: '/api/login',
+                changePassword: '/api/change-password',
+                visitors: '/api/visitors',
+                visitorsCheckout: '/api/visitors/checkout',
+                visitorsFind: '/api/visitors/find',
+                searchVisitors: '/api/search/visitors',
+                cards: '/api/cards',
+                cardsAvailable: '/api/cards/available',
+                cardsAssign: '/api/cards/assign',
+                cardsReturn: '/api/cards/return',
+                users: '/api/users',
+                stats: '/api/stats',
+                recentReturns: '/api/recent-returns'
+            }
+        };
+
+        // ==================== FUNÇÕES AUXILIARES DA API ====================
+        
+        // Função para fazer chamadas HTTP
+        async function apiCall(endpoint, options = {}) {
+            try {
+                const url = `${API_CONFIG.baseURL}${endpoint}`;
+                const defaultOptions = {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                };
+
+                const config = {
+                    ...defaultOptions,
+                    ...options,
+                    headers: {
+                        ...defaultOptions.headers,
+                        ...options.headers
+                    }
+                };
+
+                console.log(`🌐 API Call: ${config.method || 'GET'} ${url}`);
+                
+                const response = await fetch(url, config);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || `HTTP ${response.status}`);
+                }
+
+                console.log(`✅ API Response: ${endpoint}`, data);
+                return data;
+            } catch (error) {
+                console.error(`❌ API Error: ${endpoint}`, error);
+                throw error;
+            }
+        }
+
+        // Função para mostrar loading
+        function showLoading(message = 'Carregando...') {
+            // Implementação simples de loading
+            console.log(`⏳ ${message}`);
+        }
+
+        function hideLoading() {
+            console.log('✅ Loading finalizado');
+        }
+
+        // Função para mostrar erros amigáveis
+        function showError(error, context = '') {
+            const message = error.message || 'Erro desconhecido';
+            alert(`❌ Erro${context ? ` ${context}` : ''}: ${message}`);
+            console.error('Error:', error);
+        }
+
+        // ==================== DADOS DO SISTEMA ====================
+        let visitors = [];
+        let currentVisitorPhoto = null; // Armazenar foto atual
+        let cameraStream = null; // Stream da câmera
+        let cards = [];
+        let recentReturns = [];
+        let users = [];
+        let currentUser = null;
+
+        // ==================== FUNÇÕES DE CARREGAMENTO DE DADOS DA API ====================
+        
+        // Carregar dados da API
+        async function loadData() {
+            try {
+                showLoading('Carregando dados do sistema...');
+                
+                // Carregar dados em paralelo
+                await Promise.all([
+                    loadCards(),
+                    loadVisitors(),
+                    loadUsers(),
+                    loadRecentReturns()
+                ]);
+                
+                hideLoading();
+                console.log('✅ Todos os dados carregados com sucesso');
+            } catch (error) {
+                hideLoading();
+                showError(error, 'ao carregar dados');
+            }
+        }
+
+        // Carregar cartões da API
+        async function loadCards() {
+            try {
+                const response = await apiCall(API_CONFIG.endpoints.cards);
+                cards = response.cards || [];
+                console.log('✅ Cartões carregados:', cards.length);
+            } catch (error) {
+                console.error('❌ Erro ao carregar cartões:', error);
+                cards = []; // Fallback para array vazio
+            }
+        }
+
+        // Carregar visitantes da API
+        async function loadVisitors() {
+            try {
+                const response = await apiCall(API_CONFIG.endpoints.visitors);
+                visitors = response.visitors || [];
+                console.log('✅ Visitantes carregados:', visitors.length);
+            } catch (error) {
+                console.error('❌ Erro ao carregar visitantes:', error);
+                visitors = []; // Fallback para array vazio
+            }
+        }
+
+        // Carregar usuários da API
+        async function loadUsers() {
+            try {
+                const response = await apiCall(API_CONFIG.endpoints.users);
+                users = response.users || [];
+                console.log('✅ Usuários carregados:', users.length);
+            } catch (error) {
+                console.error('❌ Erro ao carregar usuários:', error);
+                users = []; // Fallback para array vazio
+            }
+        }
+
+        // Carregar devoluções recentes da API
+        async function loadRecentReturns() {
+            try {
+                const response = await apiCall(API_CONFIG.endpoints.recentReturns);
+                recentReturns = response.returns || [];
+                console.log('✅ Devoluções carregadas:', recentReturns.length);
+            } catch (error) {
+                console.error('❌ Erro ao carregar devoluções:', error);
+                recentReturns = []; // Fallback para array vazio
+            }
+        }
+
+        // Função para salvar dados (não necessária mais - substituída por chamadas da API)
+        function saveData() {
+            console.log('ℹ️ saveData() chamada - usando API, não localStorage');
+            // Esta função é mantida para compatibilidade, mas não faz nada
+            // pois os dados são salvos automaticamente via API
+        }
+
+        // ==================== SISTEMA DE AUTENTICAÇÃO COM API ====================
+        
+        // Função de login com API
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const emailInput = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            
+            try {
+                showLoading('Fazendo login...');
+                
+                // Fazer login via API
+                const response = await apiCall(API_CONFIG.endpoints.login, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        email: emailInput,
+                        password: password
+                    })
+                });
+                
+                if (response.success) {
+                    currentUser = response.user;
+                    
+                    // Salvar sessão no localStorage para persistência
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    
+                    document.getElementById('loggedUser').textContent = currentUser.name;
+                    
+                    // Esconder tela de login e mostrar sistema principal
+                    document.getElementById('loginScreen').classList.add('hidden');
+                    document.getElementById('mainSystem').classList.remove('hidden');
+                    document.body.className = 'min-h-screen';
+                    
+                    // Inicializar sistema
+                    await initializeSystem();
+                    
+                    hideLoading();
+                    
+                    const userTypeText = currentUser.userType === 'admin' ? '👑 Administrador' : '👤 Usuário Comum';
+                    alert(`✅ Login realizado com sucesso!\nBem-vindo(a), ${currentUser.name}!\nTipo: ${userTypeText}`);
+                } else {
+                    hideLoading();
+                    alert('❌ E-mail ou senha incorretos!');
+                    document.getElementById('password').value = '';
+                    document.getElementById('password').focus();
+                }
+                
+            } catch (error) {
+                hideLoading();
+                showError(error, 'no login');
+                document.getElementById('password').value = '';
+                document.getElementById('password').focus();
+            }
+        });
+
+        // Verificar se há sessão salva ao carregar a página
+        function checkSavedSession() {
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                try {
+                    currentUser = JSON.parse(savedUser);
+                    console.log('✅ Sessão encontrada para:', currentUser.name);
+                    
+                    // Auto-login se há sessão válida
+                    document.getElementById('loggedUser').textContent = currentUser.name;
+                    document.getElementById('loginScreen').classList.add('hidden');
+                    document.getElementById('mainSystem').classList.remove('hidden');
+                    document.body.className = 'min-h-screen';
+                    
+                    initializeSystem();
+                } catch (error) {
+                    console.error('❌ Erro ao restaurar sessão:', error);
+                    localStorage.removeItem('currentUser');
+                }
+            }
+        }
+
+        // Função de logout
+        function logout() {
+            if (confirm('🚪 Deseja realmente sair do sistema?')) {
+                currentUser = null;
+                
+                // Limpar sessão do localStorage
+                localStorage.removeItem('currentUser');
+                
+                // Mostrar tela de login e esconder sistema principal
+                document.getElementById('loginScreen').classList.remove('hidden');
+                document.getElementById('mainSystem').classList.add('hidden');
+                document.body.className = 'login-bg min-h-screen flex items-center justify-center';
+                
+                // Limpar formulário de login
+                document.getElementById('loginForm').reset();
+                
+                alert('👋 Logout realizado com sucesso!');
+            }
+        }
+
+        // Inicializar sistema após login
+        async function initializeSystem() {
+            try {
+                showLoading('Inicializando sistema...');
+                
+                // Carregar dados da API
+                await loadData();
+                
+                // Atualizar interface
+                updateCardCounts();
+                await loadRecentRegistrations();
+                await loadActiveVisitors();
+                
+                // Mostrar/esconder elementos baseado no tipo de usuário
+                const isAdmin = currentUser.userType === 'admin';
+                const adminElements = document.querySelectorAll('.admin-only');
+                
+                adminElements.forEach(element => {
+                    element.style.display = isAdmin ? 'block' : 'none';
+                });
+                
+                showTab('cadastro');
+                updateTime();
+                
+                hideLoading();
+                console.log('✅ Sistema inicializado com sucesso');
+            } catch (error) {
+                hideLoading();
+                showError(error, 'na inicialização do sistema');
+            }
+        }
+
+        // Atualizar relógio
+        function updateTime() {
+            const now = new Date();
+            const currentTimeElement = document.getElementById('currentTime');
+            const loginTimeElement = document.getElementById('loginTime');
+            
+            if (currentTimeElement) {
+                currentTimeElement.textContent = now.toLocaleString('pt-BR');
+            }
+            if (loginTimeElement) {
+                loginTimeElement.textContent = now.toLocaleString('pt-BR');
+            }
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // Navegação entre abas
+        function showTab(tabName) {
+            // Esconder todas as abas
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            
+            // Remover classe ativa de todos os botões
+            document.querySelectorAll('nav button').forEach(btn => {
+                btn.classList.remove('border-blue-600', 'text-blue-600');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            // Mostrar aba selecionada
+            document.getElementById(`content-${tabName}`).classList.remove('hidden');
+            
+            // Ativar botão selecionado
+            const activeBtn = document.getElementById(`tab-${tabName}`);
+            activeBtn.classList.remove('border-transparent', 'text-gray-500');
+            activeBtn.classList.add('border-blue-600', 'text-blue-600');
+
+            // Carregar dados específicos da aba
+            if (tabName === 'visitantes') {
+                loadVisitorsTable();
+            } else if (tabName === 'cartoes') {
+                loadCardsGrid();
+            } else if (tabName === 'devolver') {
+                loadRecentReturns();
+            } else if (tabName === 'usuarios') {
+                if (currentUser.userType === 'admin') {
+                    loadUsersTable();
+                } else {
+                    alert('❌ Acesso negado! Apenas administradores podem acessar esta área.');
+                    showTab('cadastro');
+                }
+            }
+        }
+
+        // ==================== CADASTRO DE VISITANTE COM API ====================
+        
+        // Cadastro de visitante
+        document.getElementById('visitorForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            try {
+                showLoading('Cadastrando visitante...');
+                
+                const visitorData = {
+                    name: document.getElementById('visitorName').value,
+                    document: document.getElementById('visitorDocument').value,
+                    phone: document.getElementById('visitorPhone').value,
+                    visitReason: document.getElementById('visitReason').value,
+                    visitResponsible: document.getElementById('visitResponsible').value,
+                    observations: document.getElementById('observations').value,
+                    registeredBy: currentUser.name,
+                    photo: currentVisitorPhoto // Incluir foto se disponível
+                };
+
+                // Cadastrar via API
+                const response = await apiCall(API_CONFIG.endpoints.visitors, {
+                    method: 'POST',
+                    body: JSON.stringify(visitorData)
+                });
+
+                if (response.success) {
+                    // Recarregar dados
+                    await loadVisitors();
+                    await loadRecentRegistrations();
+                    await loadActiveVisitors();
+                    updateCardCounts();
+                    
+                    hideLoading();
+                    alert(`✅ Visitante cadastrado com sucesso!\n👤 Nome: ${visitorData.name}\n📱 Contato: ${visitorData.phone}${currentVisitorPhoto ? '\n📸 Foto salva' : ''}\n\n⚠️ Cartão deve ser atribuído na aba "Visitantes Cadastrados"`);
+                    clearForm();
+                } else {
+                    hideLoading();
+                    alert('❌ Erro ao cadastrar visitante: ' + response.message);
+                }
+                
+            } catch (error) {
+                hideLoading();
+                showError(error, 'ao cadastrar visitante');
+            }
+        });
+
+        function clearForm() {
+            document.getElementById('visitorForm').reset();
+            removePhoto(); // Limpar foto também
+        }
+
+        // Atualizar contadores de cartões com dados da API
+        function updateCardCounts() {
+            try {
+                const available = cards.filter(card => card.status === 'available').length;
+                const inUse = cards.filter(card => card.status === 'in-use').length;
+
+                // Atualizar elementos da interface
+                const availableElement = document.getElementById('availableCards');
+                const usedElement = document.getElementById('usedCards');
+                const totalAvailableElement = document.getElementById('totalAvailable');
+                const totalInUseElement = document.getElementById('totalInUse');
+
+                if (availableElement) availableElement.textContent = available;
+                if (usedElement) usedElement.textContent = inUse;
+                if (totalAvailableElement) totalAvailableElement.textContent = available;
+                if (totalInUseElement) totalInUseElement.textContent = inUse;
+
+                console.log(`📊 Cartões: ${available} disponíveis, ${inUse} em uso`);
+            } catch (error) {
+                console.error('❌ Erro ao atualizar contadores de cartões:', error);
+            }
+        }
+
+        // Carregar cadastros recentes com API
+        async function loadRecentRegistrations() {
+            try {
+                const container = document.getElementById('recentRegistrations');
+                container.innerHTML = '';
+
+                // Buscar todos os visitantes e filtrar os mais recentes
+                await loadVisitors(); // Garantir que temos dados atualizados
+                
+                // Ordenar por timestamp de entrada (mais recentes primeiro) e pegar os 5 primeiros
+                const recentVisitors = visitors
+                    .sort((a, b) => {
+                        const timeA = new Date(a.entryTime || a.createdAt || 0).getTime();
+                        const timeB = new Date(b.entryTime || b.createdAt || 0).getTime();
+                        return timeB - timeA; // Mais recentes primeiro
+                    })
+                    .slice(0, 5);
+
+                if (recentVisitors.length === 0) {
+                    container.innerHTML = '<div class="text-gray-500 text-center py-4 text-sm">Nenhum cadastro recente</div>';
+                    return;
+                }
+
+                recentVisitors.forEach(visitor => {
+                    const item = document.createElement('div');
+                    item.className = 'bg-blue-50 border border-blue-200 rounded-lg p-3 slide-in';
+                    
+                    // Calcular tempo desde o cadastro
+                    const registrationTime = new Date(visitor.createdAt || visitor.entryTime);
+                    const now = new Date();
+                    const diffMinutes = Math.floor((now - registrationTime) / (1000 * 60));
+                    
+                    let timeAgo = '';
+                    if (diffMinutes < 1) {
+                        timeAgo = 'Agora mesmo';
+                    } else if (diffMinutes < 60) {
+                        timeAgo = `${diffMinutes} min atrás`;
+                    } else if (diffMinutes < 1440) {
+                        const hours = Math.floor(diffMinutes / 60);
+                        timeAgo = `${hours}h atrás`;
+                    } else {
+                        const days = Math.floor(diffMinutes / 1440);
+                        timeAgo = `${days}d atrás`;
+                    }
+
+                    item.innerHTML = `
+                        <div class="font-medium text-gray-800 text-sm">${visitor.name}</div>
+                        <div class="text-xs text-gray-600">📱 ${visitor.phone}</div>
+                        <div class="text-xs text-gray-500">🎫 ${visitor.cardNumber || 'Sem cartão'}</div>
+                        <div class="text-xs text-purple-600">👨‍💼 Cadastrado por: ${visitor.registeredBy}</div>
+                        <div class="text-xs text-blue-600">🕒 ${timeAgo}</div>
+                        <div class="text-xs ${visitor.status === 'active' ? 'text-green-600' : 'text-red-600'}">
+                            ${visitor.status === 'active' ? '🟢 Ativo' : '🔴 Saiu'}
+                        </div>
+                    `;
+                    container.appendChild(item);
+                });
+                
+                console.log('✅ Cadastros recentes carregados');
+            } catch (error) {
+                console.error('❌ Erro ao carregar cadastros recentes:', error);
+                const container = document.getElementById('recentRegistrations');
+                container.innerHTML = '<div class="text-red-500 text-center py-4 text-sm">Erro ao carregar dados</div>';
+            }
+        }
+
+        // Carregar visitantes ativos com API
+        async function loadActiveVisitors() {
+            try {
+                const container = document.getElementById('activeVisitors');
+                container.innerHTML = '';
+
+                // Buscar todos os visitantes e filtrar apenas os ativos
+                await loadVisitors(); // Garantir que temos dados atualizados
+                
+                // Filtrar apenas visitantes com status 'active'
+                const activeVisitors = visitors.filter(visitor => visitor.status === 'active');
+
+                if (activeVisitors.length === 0) {
+                    container.innerHTML = '<div class="text-gray-500 text-center py-4 text-sm">Nenhum visitante ativo</div>';
+                    return;
+                }
+
+                activeVisitors.forEach(visitor => {
+                    const item = document.createElement('div');
+                    item.className = 'bg-green-50 border border-green-200 rounded-lg p-3 slide-in';
+                    item.innerHTML = `
+                        <div class="font-medium text-gray-800 text-sm">${visitor.name}</div>
+                        <div class="text-xs text-gray-600">📱 ${visitor.phone}</div>
+                        <div class="text-xs text-gray-500">🎫 ${visitor.cardNumber || 'Sem cartão'}</div>
+                        <div class="text-xs text-blue-600">👤 ${visitor.visitResponsible}</div>
+                        <div class="text-xs text-green-600">🟢 Ativo desde ${visitor.entryTime}</div>
+                    `;
+                    container.appendChild(item);
+                });
+                
+                console.log('✅ Visitantes ativos carregados');
+            } catch (error) {
+                console.error('❌ Erro ao carregar visitantes ativos:', error);
+                const container = document.getElementById('activeVisitors');
+                container.innerHTML = '<div class="text-red-500 text-center py-4 text-sm">Erro ao carregar dados</div>';
+            }
+        }
+
+        // Carregar tabela de visitantes com API
+        async function loadVisitorsTable() {
+            try {
+                showLoading('Carregando visitantes...');
+                
+                const tbody = document.getElementById('visitorsTableBody');
+                tbody.innerHTML = '';
+
+                // Buscar visitantes da API
+                await loadVisitors(); // Recarregar dados mais recentes
+
+                if (visitors.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-8 text-center text-gray-500">Nenhum visitante cadastrado</td></tr>';
+                    hideLoading();
+                    return;
+                }
+
+                visitors.forEach(visitor => {
+                    const row = document.createElement('tr');
+                    row.className = 'slide-in hover:bg-gray-50';
+                    
+                    // Determinar status e cor
+                    let statusBadge = '';
+                    let statusText = '';
+                    if (visitor.status === 'pending') {
+                        statusBadge = 'bg-yellow-100 text-yellow-800';
+                        statusText = '⏳ Aguardando Cartão';
+                    } else if (visitor.status === 'active') {
+                        statusBadge = 'bg-green-100 text-green-800';
+                        statusText = '🟢 Ativo';
+                    } else {
+                        statusBadge = 'bg-red-100 text-red-800';
+                        statusText = '🔴 Saiu';
+                    }
+
+                    // Cartão - mostrar seletor para admin se status for pending
+                    let cardContent = '';
+                    if (visitor.status === 'pending' && currentUser.userType === 'admin') {
+                        const availableCards = cards.filter(c => c.status === 'available');
+                        cardContent = `
+                            <select onchange="assignCard('${visitor._id}', this.value)" class="text-xs border rounded px-2 py-1">
+                                <option value="">Selecionar cartão...</option>
+                                ${availableCards.map(card => `<option value="${card.number}">${card.number}</option>`).join('')}
+                            </select>
+                        `;
+                    } else if (visitor.cardNumber) {
+                        cardContent = `<span class="card-badge">🎫 ${visitor.cardNumber}</span>`;
+                    } else {
+                        cardContent = '<span class="text-gray-400 text-xs">Sem cartão</span>';
+                    }
+
+                    row.innerHTML = `
+                        <td class="px-4 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                ${visitor.photo ? 
+                                    `<img src="${visitor.photo}" alt="Foto" class="w-10 h-10 rounded-full object-cover mr-3 border-2 border-gray-200">` : 
+                                    '<div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mr-3 text-gray-400 text-xs">👤</div>'
+                                }
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">${visitor.name}</div>
+                                    <div class="text-sm text-gray-500">${visitor.document}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">📱 ${visitor.phone}</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${visitor.entryTime}</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                            ${visitor.exitTime ? `🚪 ${visitor.exitTime}` : '<span class="text-green-600">🟢 Ainda no local</span>'}
+                        </td>
+                        <td class="px-4 py-4 whitespace-nowrap">
+                            ${cardContent}
+                        </td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${visitor.visitReason}</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">👤 ${visitor.visitResponsible}</td>
+                        <td class="px-4 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusBadge}">
+                                ${statusText}
+                            </span>
+                        </td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                            <button onclick="viewVisitorDetails('${visitor._id}')" class="text-blue-600 hover:text-blue-900 mr-2">👁️ Ver</button>
+                            ${visitor.status === 'active' ? `<button onclick="checkoutVisitor('${visitor._id}')" class="text-red-600 hover:text-red-900 mr-2">🚪 Saída</button>` : ''}
+                            ${currentUser.userType === 'admin' ? `<button onclick="deleteVisitor('${visitor._id}')" class="text-red-600 hover:text-red-900">🗑️ Deletar</button>` : ''}
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+                hideLoading();
+                console.log('✅ Tabela de visitantes carregada');
+            } catch (error) {
+                hideLoading();
+                showError(error, 'ao carregar tabela de visitantes');
+            }
+        }
+
+        // Função para atribuir cartão ao visitante (apenas admin) com API
+        async function assignCard(visitorId, cardNumber) {
+            if (currentUser.userType !== 'admin') {
+                alert('❌ Apenas administradores podem atribuir cartões!');
+                return;
+            }
+
+            if (!cardNumber) {
+                return;
+            }
+
+            try {
+                showLoading('Atribuindo cartão...');
+
+                // Atribuir cartão via API
+                const response = await apiCall(API_CONFIG.endpoints.cardsAssign, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        visitorId: visitorId,
+                        cardNumber: cardNumber,
+                        assignedBy: currentUser.name
+                    })
+                });
+
+                if (response.success) {
+                    // Recarregar dados
+                    await loadCards();
+                    await loadVisitors();
+                    updateCardCounts();
+                    loadVisitorsTable();
+                    await loadActiveVisitors();
+                    await loadRecentRegistrations();
+
+                    hideLoading();
+                    
+                    // Encontrar visitante para mostrar informações
+                    const visitor = visitors.find(v => v._id === visitorId);
+                    const visitorName = visitor ? visitor.name : 'Visitante';
+                    
+                    alert(`✅ Cartão atribuído com sucesso!\n\n👤 Visitante: ${visitorName}\n🎫 Cartão: ${cardNumber}\n👨‍� Por: ${currentUser.name}`);
+                } else {
+                    hideLoading();
+                    alert('❌ Erro ao atribuir cartão: ' + response.message);
+                }
+                
+            } catch (error) {
+                hideLoading();
+                showError(error, 'ao atribuir cartão');
+                await loadVisitorsTable(); // Recarregar para resetar interface
+            }
+        }
+
+        function loadCardsGrid() {
+            const grid = document.getElementById('cardsGrid');
+            grid.innerHTML = '';
+
+            cards.forEach(card => {
+                const cardElement = document.createElement('div');
+                cardElement.className = `border-2 rounded-lg p-4 text-center transition-all hover:shadow-md ${
+                    card.status === 'available' ? 'border-green-300 bg-green-50' :
+                    'border-red-300 bg-red-50'
+                }`;
+                
+                cardElement.innerHTML = `
+                    <div class="text-sm font-bold mb-2">🎫 ${card.number}</div>
+                    <div class="text-sm ${
+                        card.status === 'available' ? 'text-green-600' :
+                        'text-red-600'
+                    }">
+                        ${card.status === 'available' ? '✅ Disponível' : '🔒 Em Uso'}
+                    </div>
+                    ${card.visitor ? `<div class="text-xs text-gray-500 mt-1">${card.visitor}</div>` : ''}
+                `;
+                
+                grid.appendChild(cardElement);
+            });
+        }
+
+        function findVisitorByNameOrCard() {
+            const searchTerm = document.getElementById('returnSearchInput').value.trim();
+            if (!searchTerm) {
+                alert('⚠️ Digite o nome do visitante ou número do cartão!');
+                return;
+            }
+
+            let visitor = visitors.find(v => 
+                v.status === 'active' && 
+                v.name.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            if (!visitor) {
+                const card = cards.find(c => 
+                    c.status === 'in-use' && 
+                    (c.number === searchTerm || c.number.toLowerCase().includes(searchTerm.toLowerCase()))
+                );
+                
+                if (card) {
+                    visitor = visitors.find(v => v.cardNumber === card.number && v.status === 'active');
+                }
+            }
+
+            if (!visitor) {
+                alert('❌ Visitante não encontrado!');
+                return;
+            }
+
+            document.getElementById('visitorInfo').classList.remove('hidden');
+            document.getElementById('visitorDetails').innerHTML = `
+                <div><strong>Nome:</strong> ${visitor.name}</div>
+                <div><strong>Documento:</strong> ${visitor.document}</div>
+                <div><strong>Telefone:</strong> ${visitor.phone}</div>
+                <div><strong>Motivo da Visita:</strong> ${visitor.visitReason}</div>
+                <div><strong>Responsável:</strong> ${visitor.visitResponsible}</div>
+                <div><strong>Entrada:</strong> ${visitor.entryTime}</div>
+                <div><strong>Cartão:</strong> 🎫 ${visitor.cardNumber}</div>
+            `;
+        }
+
+        async function returnCard() {
+            const searchTerm = document.getElementById('returnSearchInput').value.trim();
+            
+            if (!searchTerm) {
+                alert('⚠️ Digite o nome do visitante ou número do cartão!');
+                return;
+            }
+            
+            try {
+                showLoading('Devolvendo cartão...');
+                
+                // Chamar API para devolver cartão
+                const response = await apiCall(`${API_CONFIG.endpoints.cardsReturn}`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        searchTerm: searchTerm,
+                        returnedBy: currentUser.name
+                    })
+                });
+                
+                hideLoading();
+                
+                if (response.success) {
+                    const visitorInfo = response.visitor;
+                    alert(`✅ Cartão ${visitorInfo.cardNumber} devolvido com sucesso!\n👤 Visitante: ${visitorInfo.name}\n🕒 Saída: ${visitorInfo.exitTime}`);
+                    
+                    // Recarregar dados da API
+                    await loadCards();
+                    await loadVisitors();
+                    await loadRecentReturns();
+                    
+                    // Atualizar interface
+                    updateCardCounts();
+                    loadRecentRegistrations();
+                    loadActiveVisitors();
+                    
+                    // Limpar formulário
+                    document.getElementById('returnSearchInput').value = '';
+                    document.getElementById('visitorInfo').classList.add('hidden');
+                } else {
+                    alert('❌ Erro ao devolver cartão: ' + (response.message || 'Erro desconhecido'));
+                }
+                
+            } catch (error) {
+                hideLoading();
+                showError(error, 'ao devolver cartão');
+            }
+        }
+
+        function loadRecentReturns() {
+            const container = document.getElementById('recentReturns');
+            container.innerHTML = '';
+
+            if (recentReturns.length === 0) {
+                container.innerHTML = '<div class="text-gray-500 text-center py-4">Nenhuma devolução recente</div>';
+                return;
+            }
+
+            recentReturns.slice(0, 5).forEach(returnItem => {
+                const item = document.createElement('div');
+                const isDeleted = returnItem.action === 'DELETADO';
+                item.className = `${isDeleted ? 'bg-red-50 border border-red-200' : 'bg-gray-50'} rounded-lg p-3 slide-in`;
+                item.innerHTML = `
+                    <div class="font-medium ${isDeleted ? 'text-red-800' : 'text-gray-800'}">${returnItem.visitorName}</div>
+                    <div class="text-sm text-gray-600">🎫 ${returnItem.cardNumber}</div>
+                    <div class="text-sm text-gray-600">📱 ${returnItem.phone}</div>
+                    <div class="text-xs text-gray-500">${returnItem.returnTime}</div>
+                    ${isDeleted ? `<div class="text-xs text-red-600">🗑️ Deletado por: ${returnItem.deletedBy}</div>` : ''}
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function searchVisitors() {
+            const searchTerm = document.getElementById('searchVisitor').value.toLowerCase();
+            const filteredVisitors = visitors.filter(visitor => 
+                visitor.name.toLowerCase().includes(searchTerm) ||
+                visitor.document.includes(searchTerm) ||
+                visitor.phone.includes(searchTerm)
+            );
+            
+            const tbody = document.getElementById('visitorsTableBody');
+            tbody.innerHTML = '';
+            
+            if (filteredVisitors.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-8 text-center text-gray-500">Nenhum resultado encontrado</td></tr>';
+                return;
+            }
+
+            filteredVisitors.forEach(visitor => {
+                const row = document.createElement('tr');
+                row.className = 'slide-in hover:bg-gray-50';
+                
+                // Determinar status e cor
+                let statusBadge = '';
+                let statusText = '';
+                if (visitor.status === 'pending') {
+                    statusBadge = 'bg-yellow-100 text-yellow-800';
+                    statusText = '⏳ Aguardando Cartão';
+                } else if (visitor.status === 'active') {
+                    statusBadge = 'bg-green-100 text-green-800';
+                    statusText = '🟢 Ativo';
+                } else {
+                    statusBadge = 'bg-red-100 text-red-800';
+                    statusText = '🔴 Saiu';
+                }
+
+                // Cartão - mostrar seletor para admin se status for pending
+                let cardContent = '';
+                if (visitor.status === 'pending' && currentUser.userType === 'admin') {
+                    const availableCards = cards.filter(c => c.status === 'available');
+                    cardContent = `
+                        <select onchange="assignCard(${visitor.id}, this.value)" class="text-xs border rounded px-2 py-1">
+                            <option value="">Selecionar cartão...</option>
+                            ${availableCards.map(card => `<option value="${card.number}">${card.number}</option>`).join('')}
+                        </select>
+                    `;
+                } else if (visitor.cardNumber) {
+                    cardContent = `<span class="card-badge">🎫 ${visitor.cardNumber}</span>`;
+                } else {
+                    cardContent = '<span class="text-gray-400 text-xs">Sem cartão</span>';
+                }
+
+                row.innerHTML = `
+                    <td class="px-4 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            ${visitor.photo ? 
+                                `<img src="${visitor.photo}" alt="Foto" class="w-10 h-10 rounded-full object-cover mr-3 border-2 border-gray-200">` : 
+                                '<div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mr-3 text-gray-400 text-xs">👤</div>'
+                            }
+                            <div>
+                                <div class="text-sm font-medium text-gray-900">${visitor.name}</div>
+                                <div class="text-sm text-gray-500">${visitor.document}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">📱 ${visitor.phone}</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${visitor.entryTime}</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${visitor.exitTime ? `🚪 ${visitor.exitTime}` : '<span class="text-green-600">🟢 Ainda no local</span>'}
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap">
+                        ${cardContent}
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${visitor.visitReason}</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">👤 ${visitor.visitResponsible}</td>
+                    <td class="px-4 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusBadge}">
+                            ${statusText}
+                        </span>
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                        <button onclick="viewVisitorDetails(${visitor.id})" class="text-blue-600 hover:text-blue-900 mr-2">👁️ Ver</button>
+                        ${visitor.status === 'active' ? `<button onclick="checkoutVisitor(${visitor.id})" class="text-red-600 hover:text-red-900 mr-2">🚪 Saída</button>` : ''}
+                        ${currentUser.userType === 'admin' ? `<button onclick="deleteVisitor(${visitor.id})" class="text-red-600 hover:text-red-900">🗑️ Deletar</button>` : ''}
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function viewVisitorDetails(visitorId) {
+            const visitor = visitors.find(v => v.id === visitorId);
+            if (visitor) {
+                const exitInfo = visitor.exitTime ? `\nSaída: ${visitor.exitTime}` : '\nSaída: Ainda no local';
+                alert(`👤 Detalhes do Visitante:\n\nNome: ${visitor.name}\nDocumento: ${visitor.document}\nTelefone: ${visitor.phone}\nMotivo: ${visitor.visitReason}\nResponsável: ${visitor.visitResponsible}\nEntrada: ${visitor.entryTime}${exitInfo}\nCartão: ${visitor.cardNumber}`);
+            }
+        }
+
+        async function checkoutVisitor(visitorId) {
+            const visitor = visitors.find(v => v.id === visitorId || v._id === visitorId);
+            if (!visitor) {
+                alert('❌ Visitante não encontrado!');
+                return;
+            }
+            
+            if (visitor.status !== 'active') {
+                alert('❌ Este visitante não está ativo no sistema!');
+                return;
+            }
+            
+            if (confirm(`Confirmar saída de ${visitor.name}?`)) {
+                try {
+                    showLoading('Registrando saída...');
+                    
+                    // Usar o endpoint de devolução de cartão que já faz o checkout
+                    const response = await apiCall(`${API_CONFIG.endpoints.cardsReturn}`, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            searchTerm: visitor.name, // Buscar pelo nome do visitante
+                            checkedOutBy: currentUser.name
+                        })
+                    });
+                    
+                    hideLoading();
+                    
+                    if (response.success) {
+                        alert(`✅ Saída registrada para ${visitor.name}`);
+                        
+                        // Recarregar dados da API
+                        await loadCards();
+                        await loadVisitors();
+                        await loadRecentReturns();
+                        
+                        // Atualizar interface
+                        updateCardCounts();
+                        loadVisitorsTable();
+                        loadRecentRegistrations();
+                        loadActiveVisitors();
+                    } else {
+                        alert('❌ Erro ao registrar saída: ' + (response.message || 'Erro desconhecido'));
+                    }
+                    
+                } catch (error) {
+                    hideLoading();
+                    showError(error, 'ao registrar saída');
+                }
+            }
+        }
+
+        async function deleteVisitor(visitorId) {
+            // Verificar se o usuário é administrador
+            if (currentUser.userType !== 'admin') {
+                alert('❌ Acesso negado!\n\nApenas administradores podem deletar visitantes.\n\nSeu tipo de usuário: Usuário Comum');
+                return;
+            }
+
+            const visitor = visitors.find(v => v.id === visitorId);
+            if (!visitor) {
+                alert('❌ Visitante não encontrado!');
+                return;
+            }
+
+            // Confirmação dupla para deletar
+            const confirmMessage = `⚠️ ATENÇÃO: Esta ação não pode ser desfeita!\n\n🗑️ Deseja realmente DELETAR o visitante?\n\n👤 Nome: ${visitor.name}\n📄 Documento: ${visitor.document}\n📱 Telefone: ${visitor.phone}\n🎫 Cartão: ${visitor.cardNumber}\n\n⚠️ Todos os dados serão perdidos permanentemente!`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+
+            // Segunda confirmação
+            const finalConfirm = `🚨 CONFIRMAÇÃO FINAL\n\nDigite "DELETAR" para confirmar a exclusão de ${visitor.name}:`;
+            const userInput = prompt(finalConfirm);
+            
+            if (userInput !== 'DELETAR') {
+                alert('❌ Operação cancelada. O visitante não foi deletado.');
+                return;
+            }
+
+            try {
+                showLoading('Deletando visitante...');
+                
+                const response = await apiCall(`${API_CONFIG.endpoints.visitors}/${visitorId}`, {
+                    method: 'DELETE'
+                });
+                
+                hideLoading();
+                
+                if (response.success) {
+                    alert(`✅ Visitante deletado com sucesso!\n\n👤 ${visitor.name} foi removido permanentemente do sistema.\n🎫 Cartão ${visitor.cardNumber} foi liberado.\n\n📝 Ação registrada por: ${currentUser.name}`);
+                    
+                    // Recarregar dados e atualizar interface
+                    await loadVisitors();
+                    await loadCards();
+                    await loadRecentReturns();
+                    
+                    updateCardCounts();
+                    loadVisitorsTable();
+                    loadRecentRegistrations();
+                    loadActiveVisitors();
+                } else {
+                    alert('❌ ' + (response.message || 'Erro ao deletar visitante'));
+                }
+            } catch (error) {
+                hideLoading();
+                showError(error, 'ao deletar visitante');
+            }
+        }
+
+        // Formatação de telefone
+        document.getElementById('visitorPhone').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            value = value.replace(/(\d{2})(\d)/, '($1) $2');
+            value = value.replace(/(\d{5})(\d)/, '$1-$2');
+            e.target.value = value;
+        });
+
+        // Formatação de CPF
+        document.getElementById('visitorDocument').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length <= 11) {
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+            }
+            e.target.value = value;
+        });
+
+        // Funções para controlar modal de trocar senha
+        function showChangePasswordModal() {
+            document.getElementById('changePasswordModal').classList.remove('hidden');
+        }
+
+        function hideChangePasswordModal() {
+            document.getElementById('changePasswordModal').classList.add('hidden');
+            document.getElementById('changePasswordForm').reset();
+        }
+
+        // Trocar senha do usuário logado via API
+        document.getElementById('changePasswordForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+            
+            // Validações locais primeiro
+            if (newPassword.length < 6) {
+                alert('❌ A nova senha deve ter pelo menos 6 caracteres!');
+                document.getElementById('newPassword').focus();
+                return;
+            }
+            
+            if (newPassword !== confirmNewPassword) {
+                alert('❌ A confirmação da nova senha não confere!');
+                document.getElementById('confirmNewPassword').focus();
+                return;
+            }
+            
+            if (newPassword === currentPassword) {
+                alert('❌ A nova senha deve ser diferente da senha atual!');
+                document.getElementById('newPassword').focus();
+                return;
+            }
+
+            try {
+                showLoading('Alterando senha...');
+                
+                // Chamar API para alterar senha
+                const response = await apiCall(API_CONFIG.endpoints.changePassword, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        userEmail: currentUser.email,
+                        currentPassword: currentPassword,
+                        newPassword: newPassword,
+                        changedBy: currentUser.name
+                    })
+                });
+                
+                hideLoading();
+                
+                if (response.success) {
+                    alert(`✅ Senha alterada com sucesso!\n\n🕒 Data da alteração: ${response.changedAt}\n👤 Usuário: ${currentUser.name}\n\n⚠️ Use a nova senha no próximo login.`);
+                    hideChangePasswordModal();
+                } else {
+                    alert('❌ ' + (response.message || 'Erro ao alterar senha'));
+                }
+            } catch (error) {
+                hideLoading();
+                showError(error, 'ao alterar senha');
+            }
+        });
+
+        // Funções para controlar modal de criação de usuário
+        function showCreateUserForm() {
+            document.getElementById('createUserModal').classList.remove('hidden');
+        }
+
+        function hideCreateUserForm() {
+            document.getElementById('createUserModal').classList.add('hidden');
+            document.getElementById('createUserForm').reset();
+        }
+
+        // Criar novo usuário via API
+        document.getElementById('createUserForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('newUserName').value.trim();
+            const email = document.getElementById('newUserEmail').value.trim().toLowerCase();
+            const password = document.getElementById('newUserPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const userType = document.getElementById('newUserType').value;
+            
+            // Validações
+            if (password !== confirmPassword) {
+                alert('❌ As senhas não coincidem!');
+                return;
+            }
+            
+            if (password.length < 6) {
+                alert('❌ A senha deve ter pelo menos 6 caracteres!');
+                return;
+            }
+            
+            if (!userType) {
+                alert('❌ Selecione o tipo de usuário!');
+                return;
+            }
+
+            try {
+                showLoading('Criando usuário...');
+                
+                // Criar username baseado no e-mail (parte antes do @)
+                const username = email.split('@')[0];
+                
+                // Chamar API para criar usuário
+                const response = await apiCall(API_CONFIG.endpoints.users, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        username: username,
+                        email: email,
+                        password: password,
+                        name: name,
+                        userType: userType,
+                        createdBy: currentUser.name
+                    })
+                });
+                
+                hideLoading();
+                
+                if (response.success) {
+                    const userTypeText = userType === 'admin' ? '👑 Administrador' : '👤 Usuário Comum';
+                    alert(`✅ Usuário criado com sucesso!\n👤 Nome: ${name}\n📧 E-mail: ${email}\n🔑 Username: ${username}\n👥 Tipo: ${userTypeText}`);
+                    
+                    hideCreateUserForm();
+                    
+                    // Recarregar usuários e atualizar tabela
+                    await loadUsers();
+                    if (document.getElementById('content-usuarios').classList.contains('hidden') === false) {
+                        loadUsersTable();
+                    }
+                } else {
+                    alert('❌ ' + (response.message || 'Erro ao criar usuário'));
+                }
+            } catch (error) {
+                hideLoading();
+                showError(error, 'ao criar usuário');
+            }
+        });
+
+        // Função para gerar PDF dos visitantes
+        function printVisitorsPDF() {
+            if (visitors.length === 0) {
+                alert('❌ Não há visitantes cadastrados para imprimir!');
+                return;
+            }
+
+            // Criar uma nova janela para impressão
+            const printWindow = window.open('', '_blank');
+            
+            const currentDate = new Date().toLocaleString('pt-BR');
+            const totalVisitors = visitors.length;
+            const activeVisitors = visitors.filter(v => v.status === 'active').length;
+            const leftVisitors = visitors.filter(v => v.status === 'left').length;
+
+            let html = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Relatório de Visitantes - VerticalParts</title>
+                    <style>
+                        body {
+                            font-family: Arial, sans-serif;
+                            margin: 20px;
+                            color: #333;
+                        }
+                        .header {
+                            text-align: center;
+                            margin-bottom: 30px;
+                            border-bottom: 2px solid #f59e0b;
+                            padding-bottom: 20px;
+                        }
+                        .logo {
+                            font-size: 24px;
+                            font-weight: bold;
+                            color: #f59e0b;
+                            margin-bottom: 10px;
+                        }
+                        .title {
+                            font-size: 20px;
+                            font-weight: bold;
+                            margin-bottom: 5px;
+                        }
+                        .subtitle {
+                            color: #666;
+                            font-size: 14px;
+                        }
+                        .info-section {
+                            display: flex;
+                            justify-content: space-between;
+                            margin-bottom: 20px;
+                            background: #f8f9fa;
+                            padding: 15px;
+                            border-radius: 8px;
+                        }
+                        .info-item {
+                            text-align: center;
+                        }
+                        .info-number {
+                            font-size: 24px;
+                            font-weight: bold;
+                            color: #f59e0b;
+                        }
+                        .info-label {
+                            font-size: 12px;
+                            color: #666;
+                            margin-top: 5px;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-top: 20px;
+                            font-size: 12px;
+                        }
+                        th, td {
+                            border: 1px solid #ddd;
+                            padding: 8px;
+                            text-align: left;
+                        }
+                        th {
+                            background-color: #f59e0b;
+                            color: white;
+                            font-weight: bold;
+                        }
+                        tr:nth-child(even) {
+                            background-color: #f9f9f9;
+                        }
+                        .status-active {
+                            color: #16a34a;
+                            font-weight: bold;
+                        }
+                        .status-left {
+                            color: #dc2626;
+                            font-weight: bold;
+                        }
+                        .footer {
+                            margin-top: 30px;
+                            text-align: center;
+                            font-size: 10px;
+                            color: #666;
+                            border-top: 1px solid #ddd;
+                            padding-top: 15px;
+                        }
+                        @media print {
+                            body { margin: 0; }
+                            .no-print { display: none; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div class="logo">🏢 VERTICALPARTS</div>
+                        <div class="title">RELATÓRIO DE VISITANTES</div>
+                        <div class="subtitle">Sistema de Controle de Acesso</div>
+                        <div class="subtitle">Gerado em: ${currentDate}</div>
+                        <div class="subtitle">Por: ${currentUser.name}</div>
+                    </div>
+
+                    <div class="info-section">
+                        <div class="info-item">
+                            <div class="info-number">${totalVisitors}</div>
+                            <div class="info-label">Total de Visitantes</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-number" style="color: #16a34a;">${activeVisitors}</div>
+                            <div class="info-label">Visitantes Ativos</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-number" style="color: #dc2626;">${leftVisitors}</div>
+                            <div class="info-label">Visitantes que Saíram</div>
+                        </div>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Documento</th>
+                                <th>Telefone</th>
+                                <th>Entrada</th>
+                                <th>Saída</th>
+                                <th>Cartão</th>
+                                <th>Motivo</th>
+                                <th>Responsável</th>
+                                <th>Status</th>
+                                <th>Cadastrado por</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            // Ordenar visitantes por data de entrada (mais recentes primeiro)
+            const sortedVisitors = visitors.sort((a, b) => b.id - a.id);
+
+            sortedVisitors.forEach(visitor => {
+                const statusClass = visitor.status === 'active' ? 'status-active' : 'status-left';
+                const statusText = visitor.status === 'active' ? '🟢 Ativo' : '🔴 Saiu';
+                const exitTime = visitor.exitTime || 'Ainda no local';
+
+                html += `
+                    <tr>
+                        <td>${visitor.name}</td>
+                        <td>${visitor.document}</td>
+                        <td>${visitor.phone}</td>
+                        <td>${visitor.entryTime}</td>
+                        <td>${exitTime}</td>
+                        <td>${visitor.cardNumber}</td>
+                        <td>${visitor.visitReason}</td>
+                        <td>${visitor.visitResponsible}</td>
+                        <td class="${statusClass}">${statusText}</td>
+                        <td>${visitor.registeredBy || 'N/A'}</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+
+                    <div class="footer">
+                        <p><strong>VerticalParts - Sistema de Controle de Acesso</strong></p>
+                        <p>Relatório gerado automaticamente em ${currentDate}</p>
+                        <p>© 2025 VerticalParts - Todos os direitos reservados</p>
+                        <p>Desenvolvido por Geovane T.I - VP</p>
+                    </div>
+
+                    <div class="no-print" style="margin-top: 20px; text-align: center;">
+                        <button onclick="window.print()" style="background: #f59e0b; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px;">
+                            🖨️ Imprimir
+                        </button>
+                        <button onclick="window.close()" style="background: #6b7280; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
+                            ❌ Fechar
+                        </button>
+                    </div>
+                </body>
+                </html>
+            `;
+
+            printWindow.document.write(html);
+            printWindow.document.close();
+
+            // Aguardar o carregamento e abrir a caixa de impressão
+            printWindow.onload = function() {
+                setTimeout(() => {
+                    printWindow.print();
+                }, 500);
+            };
+        }
+
+        // Funções da câmera
+        async function openCamera() {
+            try {
+                // Solicitar acesso à câmera
+                cameraStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: 'user' // Câmera frontal
+                    } 
+                });
+                
+                const video = document.getElementById('cameraVideo');
+                video.srcObject = cameraStream;
+                
+                // Mostrar modal da câmera
+                document.getElementById('cameraModal').classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('Erro ao acessar a câmera:', error);
+                alert('❌ Não foi possível acessar a câmera!\n\nVerifique se:\n• Você deu permissão para usar a câmera\n• Sua câmera está funcionando\n• Você está usando HTTPS ou localhost');
+            }
+        }
+
+        function capturePhoto() {
+            const video = document.getElementById('cameraVideo');
+            const canvas = document.getElementById('photoCanvas');
+            const context = canvas.getContext('2d');
+            
+            // Definir tamanho do canvas
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // Capturar frame do vídeo
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Converter para base64
+            currentVisitorPhoto = canvas.toDataURL('image/jpeg', 0.8);
+            
+            // Mostrar preview da foto
+            document.getElementById('capturedPhoto').src = currentVisitorPhoto;
+            document.getElementById('photoPreview').classList.remove('hidden');
+            
+            // Fechar câmera
+            closeCamera();
+            
+            alert('✅ Foto capturada com sucesso!');
+        }
+
+        function closeCamera() {
+            // Parar stream da câmera
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+            
+            // Esconder modal
+            document.getElementById('cameraModal').classList.add('hidden');
+        }
+
+        function removePhoto() {
+            currentVisitorPhoto = null;
+            document.getElementById('photoPreview').classList.add('hidden');
+            document.getElementById('capturedPhoto').src = '';
+        }
+
+        // Funções de gerenciamento de usuários
+        function loadUsersTable() {
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = '';
+
+            // Atualizar estatísticas
+            const totalUsers = users.length;
+            const adminUsers = users.filter(u => u.userType === 'admin').length;
+            const commonUsers = users.filter(u => u.userType === 'common').length;
+
+            document.getElementById('totalUsers').textContent = totalUsers;
+            document.getElementById('adminUsers').textContent = adminUsers;
+            document.getElementById('commonUsers').textContent = commonUsers;
+
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">Nenhum usuário cadastrado</td></tr>';
+                return;
+            }
+
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                row.className = 'slide-in hover:bg-gray-50';
+                
+                const userTypeIcon = user.userType === 'admin' ? '👑' : '👤';
+                const userTypeText = user.userType === 'admin' ? 'Administrador' : 'Usuário Comum';
+                const userTypeClass = user.userType === 'admin' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800';
+                
+                const isCurrentUser = user.email === currentUser.email;
+                
+                row.innerHTML = `
+                    <td class="px-4 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mr-3 text-gray-400">
+                                ${userTypeIcon}
+                            </div>
+                            <div>
+                                <div class="text-sm font-medium text-gray-900">
+                                    ${user.name} ${isCurrentUser ? '(Você)' : ''}
+                                </div>
+                                <div class="text-sm text-gray-500">@${user.username}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${user.email}</td>
+                    <td class="px-4 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${userTypeClass}">
+                            ${userTypeIcon} ${userTypeText}
+                        </span>
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${user.createdAt || 'N/A'}</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${user.lastLogin || 'Nunca'}</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                        ${!isCurrentUser ? `
+                            <button onclick="toggleUserType('${user.email}')" class="text-blue-600 hover:text-blue-900 mr-2">
+                                🔄 Alterar Tipo
+                            </button>
+                            <button onclick="resetUserPassword('${user.email}')" class="text-yellow-600 hover:text-yellow-900 mr-2">
+                                🔑 Reset Senha
+                            </button>
+                            <button onclick="deleteUser('${user.email}')" class="text-red-600 hover:text-red-900">
+                                🗑️ Deletar
+                            </button>
+                        ` : '<span class="text-gray-400">Usuário atual</span>'}
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        async function toggleUserType(userEmail) {
+            const user = users.find(u => u.email === userEmail);
+            if (!user) {
+                alert('❌ Usuário não encontrado!');
+                return;
+            }
+
+            const currentType = user.userType === 'admin' ? 'Administrador' : 'Usuário Comum';
+            const newType = user.userType === 'admin' ? 'common' : 'admin';
+            const newTypeText = newType === 'admin' ? 'Administrador' : 'Usuário Comum';
+
+            if (confirm(`🔄 Alterar tipo de usuário?\n\n👤 Usuário: ${user.name}\n📧 E-mail: ${user.email}\n\n📋 Tipo atual: ${currentType}\n🔄 Novo tipo: ${newTypeText}\n\n⚠️ Esta alteração será aplicada imediatamente!`)) {
+                try {
+                    showLoading('Alterando tipo de usuário...');
+                    
+                    const response = await apiCall(`${API_CONFIG.endpoints.users}/${userEmail}/toggle-type`, {
+                        method: 'PUT',
+                        body: JSON.stringify({
+                            changedBy: currentUser.name
+                        })
+                    });
+                    
+                    hideLoading();
+                    
+                    if (response.success) {
+                        alert(`✅ Tipo de usuário alterado com sucesso!\n\n👤 ${user.name} agora é: ${newTypeText}\n🕒 Alterado em: ${response.timestamp}`);
+                        
+                        // Recarregar usuários e atualizar tabela
+                        await loadUsers();
+                        loadUsersTable();
+                    } else {
+                        alert('❌ ' + (response.message || 'Erro ao alterar tipo de usuário'));
+                    }
+                } catch (error) {
+                    hideLoading();
+                    showError(error, 'ao alterar tipo de usuário');
+                }
+            }
+        }
+
+        async function resetUserPassword(userEmail) {
+            const user = users.find(u => u.email === userEmail);
+            if (!user) {
+                alert('❌ Usuário não encontrado!');
+                return;
+            }
+
+            const newPassword = prompt(`🔑 Reset de Senha\n\n👤 Usuário: ${user.name}\n📧 E-mail: ${user.email}\n\nDigite a nova senha (mínimo 6 caracteres):`);
+            
+            if (!newPassword) {
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                alert('❌ A senha deve ter pelo menos 6 caracteres!');
+                return;
+            }
+
+            if (confirm(`⚠️ Confirmar reset de senha?\n\n👤 Usuário: ${user.name}\n🔑 Nova senha: ${newPassword}\n\n✅ O usuário deverá usar esta nova senha no próximo login.`)) {
+                try {
+                    showLoading('Resetando senha...');
+                    
+                    const response = await apiCall(`${API_CONFIG.endpoints.users}/${userEmail}/reset-password`, {
+                        method: 'PUT',
+                        body: JSON.stringify({
+                            newPassword: newPassword,
+                            resetBy: currentUser.name
+                        })
+                    });
+                    
+                    hideLoading();
+                    
+                    if (response.success) {
+                        alert(`✅ Senha resetada com sucesso!\n\n👤 ${user.name}\n🔑 Nova senha: ${newPassword}\n🕒 Reset em: ${response.timestamp}\n\n📝 Informe a nova senha ao usuário.`);
+                    } else {
+                        alert('❌ ' + (response.message || 'Erro ao resetar senha'));
+                    }
+                } catch (error) {
+                    hideLoading();
+                    showError(error, 'ao resetar senha');
+                }
+            }
+        }
+
+        async function deleteUser(userEmail) {
+            const user = users.find(u => u.email === userEmail);
+            if (!user) {
+                alert('❌ Usuário não encontrado!');
+                return;
+            }
+
+            // Verificar se não é o último administrador
+            const adminCount = users.filter(u => u.userType === 'admin').length;
+            if (user.userType === 'admin' && adminCount <= 1) {
+                alert('❌ Não é possível deletar o último administrador!\n\nCrie outro administrador antes de deletar este usuário.');
+                return;
+            }
+
+            const confirmMessage = `⚠️ ATENÇÃO: Esta ação não pode ser desfeita!\n\n🗑️ Deseja realmente DELETAR o usuário?\n\n👤 Nome: ${user.name}\n📧 E-mail: ${user.email}\n👥 Tipo: ${user.userType === 'admin' ? 'Administrador' : 'Usuário Comum'}\n\n⚠️ Todos os dados serão perdidos permanentemente!`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+
+            // Segunda confirmação
+            const finalConfirm = prompt(`🚨 CONFIRMAÇÃO FINAL\n\nDigite "DELETAR" para confirmar a exclusão de ${user.name}:`);
+            
+            if (finalConfirm !== 'DELETAR') {
+                alert('❌ Operação cancelada. O usuário não foi deletado.');
+                return;
+            }
+
+            try {
+                showLoading('Deletando usuário...');
+                
+                const response = await apiCall(`${API_CONFIG.endpoints.users}/${userEmail}`, {
+                    method: 'DELETE'
+                });
+                
+                hideLoading();
+                
+                if (response.success) {
+                    alert(`✅ Usuário deletado com sucesso!\n\n👤 ${user.name} foi removido permanentemente do sistema.\n\n📝 Ação registrada por: ${currentUser.name}`);
+                    
+                    // Recarregar usuários e atualizar tabela
+                    await loadUsers();
+                    loadUsersTable();
+                } else {
+                    alert('❌ ' + (response.message || 'Erro ao deletar usuário'));
+                }
+            } catch (error) {
+                hideLoading();
+                showError(error, 'ao deletar usuário');
+            }
+        }
+
+        // ==================== INICIALIZAÇÃO DO SISTEMA ====================
+        
+        // Inicializar dados na primeira carga
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Iniciando Sistema de Controle de Acesso VerticalParts');
+            console.log('🌐 API Base URL:', API_CONFIG.baseURL);
+            
+            // Verificar se há sessão salva
+            checkSavedSession();
+            
+            // Inicializar relógio
+            updateTime();
+            
+            console.log('✅ Sistema inicializado');
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97c7a68c47c401be',t:'MTc1NzQzMTAyNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
